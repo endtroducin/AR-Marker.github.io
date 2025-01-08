@@ -1,36 +1,61 @@
 document.addEventListener('DOMContentLoaded', () => {
   const marker = document.querySelector('#custom-marker');
   const arObject = document.querySelector('#ar-object');
+  const scene = document.querySelector('a-scene');
 
-  let lastPosition = new THREE.Vector3();
-  let lastRotation = new THREE.Euler();
-  let smoothingFactor = 0.1;
+  let isStaged = false; // Tracks if SLAM is engaged
 
+  // Initialize WebXR SLAM
+  async function initWebXR(position, rotation) {
+    if (!navigator.xr) {
+      console.error('WebXR not supported on this device.');
+      return;
+    }
+
+    try {
+      const session = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test']
+      });
+      console.log('WebXR session started.');
+
+      const xrReferenceSpace = await session.requestReferenceSpace('local');
+      const xrHitTestSource = await session.requestHitTestSource({
+        space: xrReferenceSpace
+      });
+
+      session.addEventListener('select', () => {
+        console.log('Anchoring object in SLAM.');
+
+        // Use hit test to anchor the object
+        arObject.object3D.position.copy(position);
+        arObject.object3D.rotation.copy(rotation);
+
+        arObject.setAttribute('visible', 'true');
+        isStaged = true;
+      });
+    } catch (err) {
+      console.error('Error initializing WebXR:', err);
+    }
+  }
+
+  // Marker detection
   marker.addEventListener('markerFound', () => {
-    console.log('Marker found!');
-    arObject.setAttribute('visible', 'true');
+    if (!isStaged) {
+      console.log('Marker found. Staging scene...');
+
+      // Capture the marker's world position and rotation
+      const position = marker.object3D.getWorldPosition(new THREE.Vector3());
+      const rotation = marker.object3D.getWorldQuaternion(new THREE.Quaternion());
+
+      // Stop relying on the marker
+      marker.remove();
+
+      // Initialize WebXR SLAM
+      initWebXR(position, rotation);
+    }
   });
 
   marker.addEventListener('markerLost', () => {
-    console.log('Marker lost!');
-    arObject.setAttribute('visible', 'false');
-  });
-
-  const scene = document.querySelector('a-scene');
-  scene.addEventListener('tick', () => {
-    if (marker.object3D.visible) {
-      const currentPosition = marker.object3D.position.clone();
-      const currentRotation = marker.object3D.rotation.clone();
-
-      // Smooth position
-      lastPosition.lerp(currentPosition, smoothingFactor);
-      arObject.object3D.position.copy(lastPosition);
-
-      // Smooth rotation
-      lastRotation.x = THREE.MathUtils.lerp(lastRotation.x, currentRotation.x, smoothingFactor);
-      lastRotation.y = THREE.MathUtils.lerp(lastRotation.y, currentRotation.y, smoothingFactor);
-      lastRotation.z = THREE.MathUtils.lerp(lastRotation.z, currentRotation.z, smoothingFactor);
-      arObject.object3D.rotation.copy(lastRotation);
-    }
+    console.log('Marker lost. Object will persist using SLAM.');
   });
 });
