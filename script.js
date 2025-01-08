@@ -1,13 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
   const marker = document.querySelector('#custom-marker');
   const arObject = document.querySelector('#ar-object');
+  const debuggerElement = document.getElementById('debugger');
 
   let isSLAMInitialized = false;
+
+  // Function to update debugger text
+  function updateDebugger(status) {
+    debuggerElement.textContent = `Status: ${status}`;
+    console.log(status);
+  }
 
   // Initialize WebXR for SLAM
   async function initWebXR(position, rotation) {
     if (!navigator.xr) {
-      console.error('WebXR not supported on this device.');
+      updateDebugger('WebXR not supported on this device.');
       return;
     }
 
@@ -16,11 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         requiredFeatures: ['hit-test'],
       });
 
-      console.log('WebXR session started.');
+      updateDebugger('WebXR session started. Initializing SLAM...');
       session.addEventListener('select', () => {
-        console.log('SLAM anchor created.');
-
-        // Use hit test to anchor the object persistently
+        updateDebugger('SLAM anchor created. Object anchored.');
         arObject.object3D.position.copy(position);
         arObject.object3D.rotation.copy(rotation);
         arObject.setAttribute('visible', 'true');
@@ -28,20 +33,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       isSLAMInitialized = true;
     } catch (err) {
-      console.error('Error initializing WebXR:', err);
+      updateDebugger(`Error initializing WebXR: ${err.message}`);
     }
   }
 
+  // Marker detection
   marker.addEventListener('markerFound', () => {
-    console.log('Marker found.');
     if (!isSLAMInitialized) {
+      updateDebugger('Marker found. Transitioning to SLAM...');
       const position = marker.object3D.getWorldPosition(new THREE.Vector3());
       const rotation = marker.object3D.getWorldQuaternion(new THREE.Quaternion());
       initWebXR(position, rotation);
+    } else {
+      updateDebugger('Marker found. SLAM already initialized.');
     }
   });
 
   marker.addEventListener('markerLost', () => {
-    console.log('Marker lost.');
+    updateDebugger('Marker lost.');
   });
+
+  updateDebugger('Waiting for marker detection...');
 });
