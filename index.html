@@ -3,22 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR.js Custom Marker Example</title>
+  <title>AR.js Persistent Object Example</title>
   <!-- A-Frame Library -->
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <!-- AR.js Library -->
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
-  <!-- External JavaScript -->
-  <script src="script.js" defer></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
   <a-scene embedded arjs>
     <!-- Custom Marker -->
-    <a-marker id="custom-marker" type="pattern" url="marker/custom-marker.patt">
-      <!-- Placeholder for 3D Object -->
+    <a-marker id="custom-marker" type="pattern" url="markers/custom-marker.patt">
+      <!-- 3D Object -->
+      <a-box id="ar-object" position="0 0.5 0" material="color: red;"></a-box>
     </a-marker>
     <!-- Camera -->
     <a-entity camera></a-entity>
   </a-scene>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const marker = document.querySelector('#custom-marker');
+      const arObject = document.querySelector('#ar-object');
+      const scene = document.querySelector('a-scene');
+
+      let lastPosition = null;
+      let lastRotation = null;
+
+      marker.addEventListener('markerFound', () => {
+        console.log('Marker found');
+        // Reattach the object to the marker
+        marker.appendChild(arObject);
+      });
+
+      marker.addEventListener('markerLost', () => {
+        console.log('Marker lost');
+        // Record the object's last known position and rotation
+        lastPosition = arObject.object3D.getWorldPosition(new THREE.Vector3());
+        lastRotation = arObject.object3D.getWorldRotation(new THREE.Euler());
+
+        // Detach the object from the marker and attach it to the scene
+        scene.appendChild(arObject);
+
+        // Set the object's position and rotation to the last known values
+        arObject.object3D.position.copy(lastPosition);
+        arObject.object3D.rotation.copy(lastRotation);
+      });
+    });
+  </script>
 </body>
 </html>
