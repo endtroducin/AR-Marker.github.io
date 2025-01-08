@@ -1,34 +1,43 @@
 document.addEventListener('DOMContentLoaded', () => {
   const marker = document.querySelector('#custom-marker');
   const arObject = document.querySelector('#ar-object');
-  const scene = document.querySelector('a-scene');
+  let isStaged = false;
 
-  let isPersisting = false; // Tracks if the object is persisting
-  let lastPosition = null;
-  let lastRotation = null;
+  // Initialize WebXR session
+  function initWebXR() {
+    if (navigator.xr) {
+      navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test']
+      }).then((session) => {
+        console.log('WebXR session started');
+        // Use SLAM for persistence
+        session.addEventListener('select', () => {
+          console.log('Hit-test detected, object anchored.');
+        });
+      }).catch((err) => {
+        console.error('WebXR not supported:', err);
+      });
+    } else {
+      console.error('WebXR is not available on this device.');
+    }
+  }
 
-  // Handle marker detection
+  // When marker is found, stage the scene
   marker.addEventListener('markerFound', () => {
-    console.log('Marker found');
-    isPersisting = false; // Stop persisting the object
-    arObject.setAttribute('visible', 'true');
-  });
+    if (!isStaged) {
+      console.log('Marker found. Staging scene...');
+      isStaged = true;
 
-  marker.addEventListener('markerLost', () => {
-    console.log('Marker lost');
-    // Store the last known position and rotation
-    lastPosition = arObject.object3D.getWorldPosition(new THREE.Vector3());
-    lastRotation = arObject.object3D.getWorldQuaternion(new THREE.Quaternion());
+      // Capture position and rotation
+      const position = arObject.object3D.getWorldPosition(new THREE.Vector3());
+      const rotation = arObject.object3D.getWorldQuaternion(new THREE.Quaternion());
 
-    isPersisting = true; // Enable persisting mode
-  });
+      // Use WebXR to anchor the object
+      initWebXR();
 
-  // Update the object's position and rotation every frame if persisting
-  scene.addEventListener('tick', () => {
-    if (isPersisting && lastPosition && lastRotation) {
-      arObject.object3D.position.copy(lastPosition);
-      arObject.object3D.quaternion.copy(lastRotation);
-      arObject.setAttribute('visible', 'true');
+      // Log position and rotation for debugging
+      console.log('Object positioned at:', position);
+      console.log('Object rotation:', rotation);
     }
   });
 });
