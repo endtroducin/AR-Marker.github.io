@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Object Memory</title>
+  <!-- AR.js Library -->
+  <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/ar.js/three.js/build/ar.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <!-- AR.js Scene -->
+  <a-scene embedded arjs>
+    <!-- Custom Marker -->
+    <a-marker preset="custom" type="pattern" url="marker/custom-marker.patt" id="marker">
+      <!-- 3D Object -->
+      <a-box id="box" position="0 0.5 0" material="color: red;"></a-box>
+    </a-marker>
+
+    <!-- AR Camera -->
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <!-- Link to JavaScript file -->
+  <script src="script.js"></script>
+</body>
+</html>
