@@ -32,3 +32,11 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Last position saved:", lastPosition);
     });
   });
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+  .then((stream) => {
+    console.log("Camera access granted");
+  })
+  .catch((error) => {
+    console.error("Camera access denied:", error);
+  });
